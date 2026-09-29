@@ -1,7 +1,6 @@
- 
 "use client";
 
-import { FormEvent, useState } from "react";
+import { SubmitEvent, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
@@ -12,7 +11,7 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function handleRegister(event: FormEvent<HTMLFormElement>) {
+  async function handleRegister(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
 
     setLoading(true);
@@ -21,7 +20,7 @@ export default function RegisterPage() {
 
     const supabase = createClient();
 
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -33,7 +32,7 @@ export default function RegisterPage() {
       setError(error.message);
     } else {
       setMessage(
-        "Registration successful. Please check your email to confirm your account."
+        "Registration successful. Please check your email to confirm your account.",
       );
     }
 
