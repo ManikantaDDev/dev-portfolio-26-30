@@ -1,37 +1,48 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
-import { logout } from "@/actions/auth";
+import Link from "next/link";
+import { AdminShell } from "@/components/admin/admin-shell";
+import { StatsGrid } from "@/components/admin/stats-grid";
+import { ProjectsTable } from "@/components/admin/projects-table";
+import { RecentActivity } from "@/components/admin/recent-activity";
+import { requireUser } from "@/lib/auth/get-session";
+import { experiences, projects, sections } from "@/lib/demo/portfolio-data";
 
 export default async function DashboardPage() {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
-  }
+  const session = await requireUser("/dashboard");
 
   return (
-    <main className="flex min-h-screen items-center justify-center p-6">
-      <div className="w-full max-w-md space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Dashboard</h1>
-          <p className="mt-2 text-muted-foreground">
-            Signed in as {user.email}.
-          </p>
+    <AdminShell
+      title={`Welcome back, ${session.email.split("@")[0]}`}
+      description="A demo view of the admin area. Data below is mocked."
+      email={session.email}
+      isAdmin={session.isAdmin}
+      actions={
+        <Link
+          href="/dashboard/projects"
+          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+        >
+          Manage projects
+        </Link>
+      }
+    >
+      <StatsGrid
+        items={[
+          { label: "Total projects", value: projects.length },
+          {
+            label: "Published",
+            value: projects.filter((project) => project.isPublished).length,
+          },
+          { label: "Visible sections", value: sections.filter((s) => s.isVisible).length },
+          { label: "Experience entries", value: experiences.length },
+        ]}
+      />
+
+      <div className="mt-8 grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <ProjectsTable projects={projects} />
         </div>
 
-        <form action={logout}>
-          <button
-            type="submit"
-            className="w-full rounded-md bg-black px-4 py-2 text-white"
-          >
-            Logout
-          </button>
-        </form>
+        <RecentActivity />
       </div>
-    </main>
+    </AdminShell>
   );
 }

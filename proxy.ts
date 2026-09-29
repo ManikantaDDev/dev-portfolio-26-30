@@ -2,9 +2,10 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 const PUBLIC_PATHS = ["/", "/login", "/register"];
+const GUARDED_PREFIXES = ["/dashboard"];
 
 export async function proxy(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
+  const supabaseResponse = NextResponse.next({
     request,
   });
 
@@ -31,19 +32,36 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { pathname } = request.nextUrl;
+  const { pathname, search } = request.nextUrl;
 
   const isPublic = PUBLIC_PATHS.some((path) => pathname.startsWith(path));
+  const isGuarded = GUARDED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 
-  if (!user && !isPublic) {
+  if (!user && isGuarded) {
     const url = request.nextUrl.clone();
+
     url.pathname = "/login";
+    url.search = `?next=${encodeURIComponent(`${pathname}${search}`)}`;
+
     return NextResponse.redirect(url);
   }
 
+  if (!user && !isPublic) {
+    const url = request.nextUrl.clone();
+
+    url.pathname = "/login";
+
+    return NextResponse.redirect(url);
+  }
+
+  const next = new URL(request.url).searchParams.get("next");
+
   if (user && (pathname === "/login" || pathname === "/register")) {
     const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
+
+    url.pathname = next && next.startsWith("/") ? next : "/dashboard";
+    url.search = "";
+
     return NextResponse.redirect(url);
   }
 
