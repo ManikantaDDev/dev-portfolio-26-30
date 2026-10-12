@@ -40,7 +40,9 @@ function LoginContent() {
         }
 
         if (message.includes("invalid login credentials")) {
-          return { error: "Invalid email or password. Please verify your credentials." };
+          return {
+            error: "Invalid email or password. Please verify your credentials.",
+          };
         }
 
         return { error: error.message };
@@ -54,29 +56,40 @@ function LoginContent() {
       return {};
     } catch (err: unknown) {
       return {
-        error: err instanceof Error ? err.message : "An unexpected error occurred during login.",
+        error:
+          err instanceof Error
+            ? err.message
+            : "An unexpected error occurred during login.",
       };
     }
   }
 
   async function handleForgotPassword(
-    values: ForgotPasswordFormValues
+    values: ForgotPasswordFormValues,
   ): Promise<SubmitResult> {
     try {
       const supabase = createClient();
-      const { error } = await supabase.auth.resetPasswordForEmail(values.email, {
-        redirectTo: `${window.location.origin}/api/auth/callback?next=/dashboard/reset-password`,
-      });
+      const { error } = await supabase.auth.resetPasswordForEmail(
+        values.email,
+        {
+          redirectTo: `${window.location.origin}/api/auth/callback?next=/dashboard/reset-password`,
+        },
+      );
 
       if (error) {
         return { error: error.message };
       }
 
       setMode("login");
-      return { message: "Password reset email sent! Check your inbox for the link." };
+      return {
+        message: "Password reset email sent! Check your inbox for the link.",
+      };
     } catch (err: unknown) {
       return {
-        error: err instanceof Error ? err.message : "Failed to send password reset email.",
+        error:
+          err instanceof Error
+            ? err.message
+            : "Failed to send password reset email.",
       };
     }
   }

@@ -43,10 +43,14 @@ export async function updatePasswordAction(values: ResetPasswordFormValues) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return { error: "Your reset session has expired. Please request a new reset link." };
+    return {
+      error: "Your reset session has expired. Please request a new reset link.",
+    };
   }
 
-  const { error } = await supabase.auth.updateUser({ password: parsed.data.password });
+  const { error } = await supabase.auth.updateUser({
+    password: parsed.data.password,
+  });
 
   if (error) {
     return { error: error.message };

@@ -38,7 +38,9 @@ export default async function DashboardPage() {
 
       <main className="max-w-5xl mx-auto py-8">
         <div className="rounded-xl border border-border bg-card p-6 shadow-xs">
-          <h2 className="text-lg font-semibold mb-2">Welcome to your Portfolio Admin</h2>
+          <h2 className="text-lg font-semibold mb-2">
+            Welcome to your Portfolio Admin
+          </h2>
           <p className="text-muted-foreground text-sm mb-4">
             You have successfully authenticated into the admin portal.
           </p>

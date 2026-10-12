@@ -9,7 +9,9 @@ import { createClient } from "@/lib/supabase/client";
 export default function RegisterPage() {
   const router = useRouter();
 
-  async function handleRegister(values: RegisterFormValues): Promise<SubmitResult> {
+  async function handleRegister(
+    values: RegisterFormValues,
+  ): Promise<SubmitResult> {
     try {
       const supabase = createClient();
 
@@ -28,11 +30,13 @@ export default function RegisterPage() {
 
       router.refresh();
       return {
-        message: "Registration successful. Please check your email to confirm your account.",
+        message:
+          "Registration successful. Please check your email to confirm your account.",
       };
     } catch (err: unknown) {
       return {
-        error: err instanceof Error ? err.message : "Failed to create your account.",
+        error:
+          err instanceof Error ? err.message : "Failed to create your account.",
       };
     }
   }
