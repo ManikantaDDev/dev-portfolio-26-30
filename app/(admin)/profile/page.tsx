@@ -6,7 +6,6 @@ import {
   Code,
   Globe,
   MapPin,
-  Pencil,
   Shield,
   Star,
 } from "lucide-react";
@@ -42,19 +41,6 @@ export default async function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border">
-        <div className="mx-auto flex max-w-3xl items-center justify-between px-8 py-4">
-          <h1 className="text-lg font-bold">My Profile</h1>
-          <Link
-            href="/admin"
-            className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-          >
-            <Pencil />
-            Edit Profile
-          </Link>
-        </div>
-      </header>
-
       <main className="mx-auto max-w-3xl space-y-6 px-8 py-8">
         <section className="rounded-xl border border-border bg-card p-6 shadow-xs">
           <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
@@ -106,7 +92,7 @@ export default async function ProfilePage() {
               <dt className="text-xs text-muted-foreground">Email</dt>
               <dd className="truncate font-medium">{user.email}</dd>
             </div>
-{role ? (
+            {role ? (
               <div className="space-y-0.5">
                 <dt className="text-xs text-muted-foreground">Role</dt>
                 <dd className="flex items-center gap-1.5 font-medium capitalize">
@@ -121,7 +107,9 @@ export default async function ProfilePage() {
             </div>
             <div className="space-y-0.5">
               <dt className="text-xs text-muted-foreground">Email confirmed</dt>
-              <dd className="font-medium">{user.email_confirmed_at ? formatDate(user.email_confirmed_at) : "\u2014"}</dd>
+              <dd className="font-medium">
+                {user.email_confirmed_at ? formatDate(user.email_confirmed_at) : "—"}
+              </dd>
             </div>
           </dl>
         </section>
@@ -146,7 +134,8 @@ export default async function ProfilePage() {
             </ul>
           </section>
         ) : null}
-      {skills.length > 0 ? (
+
+        {skills.length > 0 ? (
           <section className="rounded-xl border border-border bg-card p-6 shadow-xs">
             <h3 className="text-base font-semibold">Skills</h3>
             <ul className="mt-4 flex flex-wrap gap-2">

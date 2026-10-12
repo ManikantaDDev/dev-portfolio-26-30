@@ -11,7 +11,6 @@ const navItems = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/profile", label: "My Profile" },
 ];
-
 export default async function AdminLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
@@ -29,7 +28,7 @@ export default async function AdminLayout({
             <h1 className="text-lg font-bold">Admin</h1>
             <p className="text-xs text-muted-foreground">
               {current.user.email}
-              {current.role ? ` \u00b7 ${current.role}` : ""}
+              {current.role ? ` · ${current.role}` : ""}
             </p>
           </div>
 

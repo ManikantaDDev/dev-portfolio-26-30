@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { logout } from "@/actions/auth";
+import { signOutAction as logout } from "@/actions/auth";
 import { cn } from "@/lib/utils";
 
 export type AdminShellProps = {
