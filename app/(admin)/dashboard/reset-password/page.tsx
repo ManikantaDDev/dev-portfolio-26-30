@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
-import ResetPasswordForm from "@/features/auth/reset-password-form";
+import GenericForm from "@/forms/generic-form";
+import { ResetPasswordFormConfig } from "@/forms/config/reset-password";
+import { updatePasswordAction } from "@/actions/auth";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function ResetPasswordPage() {
@@ -14,7 +16,11 @@ export default async function ResetPasswordPage() {
 
   return (
     <main className="min-h-screen flex items-center justify-center p-4 bg-muted/20">
-      <ResetPasswordForm email={user.email ?? ""} />
+      <GenericForm
+        formKey="reset-password"
+        config={ResetPasswordFormConfig.formConfig(user.email ?? undefined)}
+        action={updatePasswordAction}
+      />
     </main>
   );
 }
