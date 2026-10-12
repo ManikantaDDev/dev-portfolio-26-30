@@ -52,6 +52,31 @@ export type ResetPasswordFormValues = {
   confirmPassword: string;
 };
 
+export type ProfileFormValues = {
+  display_name: string;
+  headline: string;
+  bio: string;
+  avatar_url: string;
+  location: string;
+  github_url: string;
+  linkedin_url: string;
+  website_url: string;
+};
+
+export const PROFILE_LIMITS = {
+  displayName: 100,
+  headline: 120,
+  bio: 600,
+  avatarUrl: 500,
+  location: 100,
+  websiteUrl: 300,
+} as const;
+
+const optionalUrl = z.union([z.literal(""), z.url("Enter a valid URL")]);
+
+const optionalText = (max: number, label: string) =>
+  z.string().trim().max(max, `${label} must be at most ${max} characters`);
+
 export const loginSchema = z.object({
   email: Validations.email,
   password: z.string().trim().min(1, "Password is required"),
@@ -62,3 +87,24 @@ export const forgotPasswordSchema = z.object({
 });
 
 export { registerSchema, resetPasswordSchema };
+
+export const profileSchema = z.object({
+  display_name: z
+    .string()
+    .trim()
+    .min(2, "Name must be at least 2 characters")
+    .max(PROFILE_LIMITS.displayName, `Name must be at most ${PROFILE_LIMITS.displayName} characters`),
+  headline: optionalText(PROFILE_LIMITS.headline, "Headline"),
+  bio: optionalText(PROFILE_LIMITS.bio, "Bio"),
+  avatar_url: z.union([
+    z.literal(""),
+    z.url("Enter a valid avatar URL").max(PROFILE_LIMITS.avatarUrl),
+  ]),
+  location: optionalText(PROFILE_LIMITS.location, "Location"),
+  github_url: optionalUrl,
+  linkedin_url: optionalUrl,
+  website_url: z.union([
+    z.literal(""),
+    z.url("Enter a valid website URL").max(PROFILE_LIMITS.websiteUrl),
+  ]),
+});

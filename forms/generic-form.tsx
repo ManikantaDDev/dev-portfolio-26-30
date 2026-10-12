@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  useMemo,
   useState,
   useTransition,
   type ChangeEvent,
@@ -49,6 +48,7 @@ import {
   type FormInputConfig,
   type FormValues,
 } from "./config/form";
+import { formConfigs } from "./configs";
 import { formStores, type FormKey } from "./stores";
 import type { FormState } from "@/lib/backend/stores/genericStore";
 
@@ -64,7 +64,15 @@ export type SubmitResult = {
 
 export type GenericFormProps<T extends FormValues> = {
   formKey: FormKey;
-  config: FormConfig;
+  /**
+   * Explicit config. Only passable from a client component, since configs carry
+   * icons and zod schemas. Overrides `formKey` lookup when provided.
+   */
+  config?: FormConfig;
+  /** Options forwarded to the registry factory (must be serializable). */
+  configOptions?: unknown;
+  /** Lets a client component adjust the resolved config, e.g. inject handlers. */
+  transformConfig?: (config: FormConfig) => FormConfig;
   onSubmit?: (values: T) => Promise<SubmitResult | void>;
   action?: (values: T) => Promise<SubmitResult | void>;
   /** Merged into the store on first render (e.g. server-provided values). */
@@ -76,7 +84,9 @@ export type GenericFormProps<T extends FormValues> = {
 
 export default function GenericForm<T extends FormValues>({
   formKey,
-  config,
+  config: configProp,
+  configOptions,
+  transformConfig,
   onSubmit,
   action,
   initialValues,
@@ -95,9 +105,12 @@ export default function GenericForm<T extends FormValues>({
     if (initialValues) useStore.getState().setForm(initialValues);
   });
 
+  const baseConfig = configProp ?? formConfigs[formKey](configOptions as never);
+  const config = transformConfig ? transformConfig(baseConfig) : baseConfig;
+
   const router = useRouter();
-  const schema = useMemo(() => buildSchema(config), [config]);
-  const inputs = useMemo(() => allInputs(config), [config]);
+  const schema = buildSchema(config);
+  const inputs = allInputs(config);
   const Icon = config.icon;
 
   function handleFieldChange(field: FormInputConfig, value: unknown) {

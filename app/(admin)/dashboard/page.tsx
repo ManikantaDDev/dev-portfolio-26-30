@@ -42,9 +42,17 @@ export default async function DashboardPage() {
           <p className="text-muted-foreground text-sm mb-4">
             You have successfully authenticated into the admin portal.
           </p>
-          <div className="flex gap-4">
-            <Link href="/">
+          <div className="flex flex-wrap gap-4">
+            <Link href="/admin">
+              <Button size="sm">Edit Profile</Button>
+            </Link>
+            <Link href="/profile">
               <Button variant="secondary" size="sm">
+                View My Profile
+              </Button>
+            </Link>
+            <Link href="/">
+              <Button variant="outline" size="sm">
                 View Live Portfolio
               </Button>
             </Link>

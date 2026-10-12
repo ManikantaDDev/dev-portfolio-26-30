@@ -2,6 +2,7 @@
 
 import { useForgotPasswordFormStore } from "@/stores/form/forgot-password/store";
 import { useLoginFormStore } from "@/stores/form/login/store";
+import { useProfileFormStore } from "@/stores/form/profile/store";
 import { useRegisterFormStore } from "@/stores/form/register/store";
 import { useResetPasswordFormStore } from "@/stores/form/reset-password/store";
 
@@ -14,6 +15,7 @@ export const formStores = {
   "forgot-password": useForgotPasswordFormStore,
   register: useRegisterFormStore,
   "reset-password": useResetPasswordFormStore,
+  profile: useProfileFormStore,
 };
 
 export type FormKey = keyof typeof formStores;
