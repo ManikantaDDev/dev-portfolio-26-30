@@ -148,6 +148,8 @@ ALTER TABLE public.projects ENABLE ROW LEVEL SECURITY;
 -- ============================================================
 
 -- Anyone can view published projects.
+DROP POLICY IF EXISTS "Anyone can view published projects" ON public.projects;
+
 CREATE POLICY "Anyone can view published projects"
 ON public.projects
 FOR SELECT
@@ -158,72 +160,77 @@ USING (
 );
 
 
--- Authenticated admins can view all projects.
-CREATE POLICY "Admins can view all projects"
-ON public.projects
-FOR SELECT
-TO authenticated
-USING (
-    EXISTS (
+-- ============================================================
+-- IS_ADMIN HELPER
+-- ============================================================
+-- A policy on public.profiles must NOT read public.profiles in its
+-- USING clause: Postgres rejects that with
+-- "infinite recursion detected in policy for relation profiles".
+--
+-- SECURITY DEFINER runs this as the function owner, which bypasses
+-- RLS, so the lookup cannot recurse back into the policy.
+
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+    SELECT EXISTS (
         SELECT 1
         FROM public.profiles
         WHERE profiles.id = auth.uid()
         AND profiles.role = 'admin'
-    )
-);
+    );
+$$;
 
+GRANT EXECUTE ON FUNCTION public.is_admin() TO authenticated;
+
+
+-- ============================================================
+-- ADMIN-ONLY POLICIES
+-- ============================================================
 
 -- Only admins can create projects.
+DROP POLICY IF EXISTS "Admins can create projects" ON public.projects;
+
 CREATE POLICY "Admins can create projects"
 ON public.projects
 FOR INSERT
 TO authenticated
-WITH CHECK (
-    EXISTS (
-        SELECT 1
-        FROM public.profiles
-        WHERE profiles.id = auth.uid()
-        AND profiles.role = 'admin'
-    )
-);
+WITH CHECK (public.is_admin());
 
 
 -- Only admins can update projects.
+DROP POLICY IF EXISTS "Admins can update projects" ON public.projects;
+
 CREATE POLICY "Admins can update projects"
 ON public.projects
 FOR UPDATE
 TO authenticated
-USING (
-    EXISTS (
-        SELECT 1
-        FROM public.profiles
-        WHERE profiles.id = auth.uid()
-        AND profiles.role = 'admin'
-    )
-)
-WITH CHECK (
-    EXISTS (
-        SELECT 1
-        FROM public.profiles
-        WHERE profiles.id = auth.uid()
-        AND profiles.role = 'admin'
-    )
-);
+USING (public.is_admin())
+WITH CHECK (public.is_admin());
 
 
 -- Only admins can delete projects.
+DROP POLICY IF EXISTS "Admins can delete projects" ON public.projects;
+
 CREATE POLICY "Admins can delete projects"
 ON public.projects
 FOR DELETE
 TO authenticated
-USING (
-    EXISTS (
-        SELECT 1
-        FROM public.profiles
-        WHERE profiles.id = auth.uid()
-        AND profiles.role = 'admin'
-    )
-);
+USING (public.is_admin());
+
+
+-- Authenticated admins can view all projects.
+DROP POLICY IF EXISTS "Admins can view all projects" ON public.projects;
+
+CREATE POLICY "Admins can view all projects"
+ON public.projects
+FOR SELECT
+TO authenticated
+USING (public.is_admin());
 
 
 -- ============================================================
@@ -231,6 +238,8 @@ USING (
 -- ============================================================
 
 -- Public visitors can see visible sections.
+DROP POLICY IF EXISTS "Anyone can view visible sections" ON public.sections_config;
+
 CREATE POLICY "Anyone can view visible sections"
 ON public.sections_config
 FOR SELECT
@@ -239,26 +248,14 @@ USING (is_visible = TRUE);
 
 
 -- Admins can manage section configuration.
+DROP POLICY IF EXISTS "Admins can manage sections" ON public.sections_config;
+
 CREATE POLICY "Admins can manage sections"
 ON public.sections_config
 FOR ALL
 TO authenticated
-USING (
-    EXISTS (
-        SELECT 1
-        FROM public.profiles
-        WHERE profiles.id = auth.uid()
-        AND profiles.role = 'admin'
-    )
-)
-WITH CHECK (
-    EXISTS (
-        SELECT 1
-        FROM public.profiles
-        WHERE profiles.id = auth.uid()
-        AND profiles.role = 'admin'
-    )
-);
+USING (public.is_admin())
+WITH CHECK (public.is_admin());
 
 
 -- ============================================================
@@ -266,6 +263,8 @@ WITH CHECK (
 -- ============================================================
 
 -- Public visitors can read portfolio settings.
+DROP POLICY IF EXISTS "Anyone can view portfolio settings" ON public.portfolio_settings;
+
 CREATE POLICY "Anyone can view portfolio settings"
 ON public.portfolio_settings
 FOR SELECT
@@ -274,26 +273,14 @@ USING (TRUE);
 
 
 -- Only admins can modify settings.
+DROP POLICY IF EXISTS "Admins can manage portfolio settings" ON public.portfolio_settings;
+
 CREATE POLICY "Admins can manage portfolio settings"
 ON public.portfolio_settings
 FOR ALL
 TO authenticated
-USING (
-    EXISTS (
-        SELECT 1
-        FROM public.profiles
-        WHERE profiles.id = auth.uid()
-        AND profiles.role = 'admin'
-    )
-)
-WITH CHECK (
-    EXISTS (
-        SELECT 1
-        FROM public.profiles
-        WHERE profiles.id = auth.uid()
-        AND profiles.role = 'admin'
-    )
-);
+USING (public.is_admin())
+WITH CHECK (public.is_admin());
 
 
 -- ============================================================
@@ -301,6 +288,8 @@ WITH CHECK (
 -- ============================================================
 
 -- Users can view their own profile.
+DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
+
 CREATE POLICY "Users can view own profile"
 ON public.profiles
 FOR SELECT
@@ -308,19 +297,15 @@ TO authenticated
 USING (id = auth.uid());
 
 
--- Admins can view all profiles.
+-- Admins can view all profiles. Uses is_admin() rather than an
+-- inline EXISTS so the policy does not reference its own table.
+DROP POLICY IF EXISTS "Admins can view all profiles" ON public.profiles;
+
 CREATE POLICY "Admins can view all profiles"
 ON public.profiles
 FOR SELECT
 TO authenticated
-USING (
-    EXISTS (
-        SELECT 1
-        FROM public.profiles AS p
-        WHERE p.id = auth.uid()
-        AND p.role = 'admin'
-    )
-);
+USING (public.is_admin());
 
 
 -- ============================================================

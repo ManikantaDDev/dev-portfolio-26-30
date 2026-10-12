@@ -1,19 +1,20 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Briefcase, Building, Code, Globe, MapPin, Shield, Star } from "lucide-react";
+import { AdminShell } from "@/components/admin/admin-shell";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
-  Briefcase,
-  Building,
-  Code,
-  Globe,
-  MapPin,
-  Shield,
-  Star,
-} from "lucide-react";
-import { getCurrentProfile } from "@/lib/supabase/profile";
-import { buttonVariants } from "@/components/ui/button";
+  getEducations,
+  getExperiences,
+  getOwnerId,
+  getProfileById,
+  getProjects,
+  getSkills,
+  requireUser,
+} from "@/lib/portfolio/queries";
 import { cn } from "cn";
 
-const linkFields = [
+const LINK_FIELDS = [
   { key: "github_url", label: "GitHub", icon: Code },
   { key: "linkedin_url", label: "LinkedIn", icon: Building },
   { key: "website_url", label: "Website", icon: Globe },
@@ -28,26 +29,42 @@ function formatDate(value: string) {
 }
 
 export default async function ProfilePage() {
-  const current = await getCurrentProfile();
+  const user = await requireUser("/profile");
 
-  if (!current) {
-    redirect("/login");
+  const [profile, ownerId, skills, projects, experiences, educations] = await Promise.all([
+    getProfileById(user.id),
+    getOwnerId(),
+    getSkills(user.id),
+    getProjects(user.id),
+    getExperiences(user.id),
+    getEducations(user.id),
+  ]);
+
+  if (!profile) {
+    redirect("/dashboard");
   }
 
-  const { user, profile, role, skills } = current;
-  const displayName = profile?.display_name || user.email || "Profile";
-  const initial = displayName.charAt(0).toUpperCase();
-  const links = linkFields.filter((field) => profile?.[field.key]);
+  const initial = (profile.display_name || user.email || "P").charAt(0).toUpperCase();
+  const links = LINK_FIELDS.filter((field) => profile[field.key]);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <AdminShell
+      title="My Profile"
+      description="A read-only view of everything stored against your account."
+      actions={
+        <Link href="/admin/profile">
+          <Button size="sm">Edit Profile</Button>
+        </Link>
+      }
+    >
+      <div className="space-y-6">
         <section className="rounded-xl border border-border bg-card p-6 shadow-xs">
           <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-            {profile?.avatar_url ? (
+            {profile.avatar_url ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={profile.avatar_url}
-                alt={displayName}
+                alt={profile.display_name ?? "Profile"}
                 className="size-20 shrink-0 rounded-full border border-border object-cover"
               />
             ) : (
@@ -57,14 +74,16 @@ export default async function ProfilePage() {
             )}
 
             <div className="min-w-0">
-              <h2 className="truncate text-xl font-semibold">{displayName}</h2>
-              {profile?.headline ? (
+              <h2 className="truncate text-xl font-semibold">
+                {profile.display_name || user.email}
+              </h2>
+              {profile.headline ? (
                 <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
                   <Briefcase className="size-3.5" />
                   {profile.headline}
                 </p>
               ) : null}
-              {profile?.location ? (
+              {profile.location ? (
                 <p className="mt-0.5 flex items-center gap-1.5 text-sm text-muted-foreground">
                   <MapPin className="size-3.5" />
                   {profile.location}
@@ -73,7 +92,7 @@ export default async function ProfilePage() {
             </div>
           </div>
 
-          {profile?.bio ? (
+          {profile.bio ? (
             <p className="mt-4 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
               {profile.bio}
             </p>
@@ -91,24 +110,20 @@ export default async function ProfilePage() {
               <dt className="text-xs text-muted-foreground">Email</dt>
               <dd className="truncate font-medium">{user.email}</dd>
             </div>
-            {role ? (
-              <div className="space-y-0.5">
-                <dt className="text-xs text-muted-foreground">Role</dt>
-                <dd className="flex items-center gap-1.5 font-medium capitalize">
-                  <Shield className="size-3.5 text-muted-foreground" />
-                  {role}
-                </dd>
-              </div>
-            ) : null}
+            <div className="space-y-0.5">
+              <dt className="text-xs text-muted-foreground">Role</dt>
+              <dd className="flex items-center gap-1.5 font-medium capitalize">
+                <Shield className="size-3.5 text-muted-foreground" />
+                {profile.role}
+              </dd>
+            </div>
             <div className="space-y-0.5">
               <dt className="text-xs text-muted-foreground">Member since</dt>
               <dd className="font-medium">{formatDate(user.created_at)}</dd>
             </div>
             <div className="space-y-0.5">
-              <dt className="text-xs text-muted-foreground">Email confirmed</dt>
-              <dd className="font-medium">
-                {user.email_confirmed_at ? formatDate(user.email_confirmed_at) : "—"}
-              </dd>
+              <dt className="text-xs text-muted-foreground">Published portfolio</dt>
+              <dd className="font-medium">{ownerId === user.id ? "Yes" : "No"}</dd>
             </div>
           </dl>
         </section>
@@ -120,7 +135,7 @@ export default async function ProfilePage() {
               {links.map((field) => (
                 <li key={field.key}>
                   <Link
-                    href={profile![field.key] as string}
+                    href={profile[field.key] as string}
                     target="_blank"
                     rel="noopener noreferrer"
                     className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
@@ -133,6 +148,30 @@ export default async function ProfilePage() {
             </ul>
           </section>
         ) : null}
+
+        <section className="rounded-xl border border-border bg-card p-6 shadow-xs">
+          <h3 className="text-base font-semibold">Content</h3>
+          <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+            <div className="space-y-0.5">
+              <dt className="text-xs text-muted-foreground">Skills</dt>
+              <dd className="font-medium">{skills.length}</dd>
+            </div>
+            <div className="space-y-0.5">
+              <dt className="text-xs text-muted-foreground">
+                Projects ({projects.filter((project) => project.is_published).length} published)
+              </dt>
+              <dd className="font-medium">{projects.length}</dd>
+            </div>
+            <div className="space-y-0.5">
+              <dt className="text-xs text-muted-foreground">Roles</dt>
+              <dd className="font-medium">{experiences.length}</dd>
+            </div>
+            <div className="space-y-0.5">
+              <dt className="text-xs text-muted-foreground">Qualifications</dt>
+              <dd className="font-medium">{educations.length}</dd>
+            </div>
+          </dl>
+        </section>
 
         {skills.length > 0 ? (
           <section className="rounded-xl border border-border bg-card p-6 shadow-xs">
@@ -154,5 +193,6 @@ export default async function ProfilePage() {
           </section>
         ) : null}
       </div>
+    </AdminShell>
   );
 }

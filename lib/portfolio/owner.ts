@@ -1,39 +1,117 @@
-import { getCurrentProfile } from "@/lib/supabase/profile";
-import { PortfolioProjects, type PortfolioOwner } from "@/portfolio/config/sections";
+import { getPublicPortfolio } from "@/lib/portfolio/queries";
+import type { SectionRow } from "@/types/database";
+import type {
+  PortfolioEducation,
+  PortfolioExperience,
+  PortfolioOwner,
+  PortfolioProject,
+  PortfolioSection,
+  PortfolioSkill,
+} from "@/portfolio/config/sections";
 
-const FALLBACK_OWNER = {
-  name: "Your Name",
-  headline: "Full-stack Developer",
-  bio: "Add your details from the admin panel and they will appear here.",
-  avatarUrl: "",
-  location: "",
-  email: "",
-  links: { github: "", linkedin: "", website: "" },
-};
+function toSections(rows: SectionRow[]): PortfolioSection[] {
+  return rows.map((row) => ({
+    key: row.name,
+    id: row.id,
+    anchor: row.name,
+    navLabel: row.label,
+    heading: row.heading,
+    description: row.description,
+    visible: row.is_visible,
+  }));
+}
 
-export async function getPortfolioOwner(): Promise<{
-  owner: PortfolioOwner;
-  isPersonalised: boolean;
-}> {
-  const current = await getCurrentProfile();
-  const profile = current?.profile ?? null;
-  const skills = current?.skills ?? [];
+/**
+ * Resolves everything the public page renders. Returns null while no portfolio
+ * has been claimed, so the page can show an honest empty state rather than
+ * inventing placeholder content.
+ */
+export async function getPortfolio(): Promise<PortfolioOwner | null> {
+  const data = await getPublicPortfolio();
 
-  const owner: PortfolioOwner = {
-    name: profile?.display_name || FALLBACK_OWNER.name,
-    headline: profile?.headline || FALLBACK_OWNER.headline,
-    bio: profile?.bio || FALLBACK_OWNER.bio,
-    avatarUrl: profile?.avatar_url ?? "",
-    location: profile?.location ?? "",
-    email: current?.user.email ?? "",
+  if (!data) return null;
+
+  const skills: PortfolioSkill[] = data.skills.map((skill) => ({
+    id: skill.id,
+    name: skill.name,
+    category: skill.category,
+    level: skill.level,
+    years: skill.years,
+    isFeatured: skill.is_featured,
+  }));
+
+  const projects: PortfolioProject[] = data.projects.map((project) => ({
+    id: project.id,
+    title: project.title,
+    description: project.description,
+    imageUrl: project.image_url,
+    liveUrl: project.live_url,
+    githubUrl: project.github_url,
+    tags: project.tags ?? [],
+    isFeatured: project.is_featured,
+  }));
+
+  const experiences: PortfolioExperience[] = data.experiences.map((experience) => ({
+    id: experience.id,
+    company: experience.company,
+    title: experience.title,
+    location: experience.location,
+    employmentType: experience.employment_type,
+    startDate: experience.start_date,
+    endDate: experience.end_date,
+    isCurrent: experience.is_current,
+    summary: experience.summary,
+  }));
+
+  const educations: PortfolioEducation[] = data.educations.map((education) => ({
+    id: education.id,
+    institution: education.institution,
+    degree: education.degree,
+    fieldOfStudy: education.field_of_study,
+    startDate: education.start_date,
+    endDate: education.end_date,
+    grade: education.grade,
+    summary: education.summary,
+  }));
+
+  return {
+    name: data.owner.display_name ?? "",
+    headline: data.owner.headline ?? "",
+    bio: data.owner.bio ?? "",
+    avatarUrl: data.owner.avatar_url ?? "",
+    location: data.owner.location ?? "",
+    email: data.owner.email ?? "",
     links: {
-      github: profile?.github_url ?? "",
-      linkedin: profile?.linkedin_url ?? "",
-      website: profile?.website_url ?? "",
+      github: data.owner.github_url ?? "",
+      linkedin: data.owner.linkedin_url ?? "",
+      website: data.owner.website_url ?? "",
     },
     skills,
-    projects: PortfolioProjects.projects(),
+    projects,
+    experiences,
+    educations,
+    sections: toSections(data.sections),
+    settings: data.settings,
   };
+}
 
-  return { owner, isPersonalised: Boolean(profile?.display_name) };
+/**
+ * A section is only rendered when it is visible in `sections_config` and has
+ * something to show.
+ */
+export function isRenderableSection(section: PortfolioSection, owner: PortfolioOwner): boolean {
+  if (!section.visible) return false;
+
+  switch (section.key) {
+    case "skills":
+      return owner.skills.length > 0;
+    case "projects":
+      return owner.projects.length > 0;
+    case "experience":
+      return owner.experiences.length > 0;
+    case "education":
+      return owner.educations.length > 0;
+    default:
+      return true;
+  }
 }

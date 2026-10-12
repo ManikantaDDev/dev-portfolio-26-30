@@ -1,11 +1,20 @@
-import type { Skill } from "@/forms/config/validations";
-
-export type PortfolioSectionKey = "hero" | "about" | "skills" | "projects" | "contact";
+export type PortfolioSectionKey =
+  | "hero"
+  | "about"
+  | "skills"
+  | "experience"
+  | "projects"
+  | "education"
+  | "contact";
 
 export type PortfolioSection = {
-  key: PortfolioSectionKey;
+  key: string;
   id: string;
+  /** Anchor id used for the in-page nav links. */
+  anchor: string;
   navLabel: string | null;
+  heading: string | null;
+  description: string | null;
   visible: boolean;
 };
 
@@ -13,9 +22,43 @@ export type PortfolioProject = {
   id: string;
   title: string;
   description: string;
-  liveUrl?: string;
-  githubUrl?: string;
+  imageUrl: string | null;
+  liveUrl: string | null;
+  githubUrl: string | null;
   tags: string[];
+  isFeatured: boolean;
+};
+
+export type PortfolioSkill = {
+  id: string;
+  name: string;
+  category: string;
+  level: string;
+  years: number | null;
+  isFeatured: boolean;
+};
+
+export type PortfolioExperience = {
+  id: string;
+  company: string;
+  title: string;
+  location: string | null;
+  employmentType: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  isCurrent: boolean;
+  summary: string | null;
+};
+
+export type PortfolioEducation = {
+  id: string;
+  institution: string;
+  degree: string | null;
+  fieldOfStudy: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  grade: string | null;
+  summary: string | null;
 };
 
 export type PortfolioOwner = {
@@ -30,39 +73,10 @@ export type PortfolioOwner = {
     linkedin: string;
     website: string;
   };
-  skills: Skill[];
+  skills: PortfolioSkill[];
   projects: PortfolioProject[];
+  experiences: PortfolioExperience[];
+  educations: PortfolioEducation[];
+  sections: PortfolioSection[];
+  settings: Record<string, string>;
 };
-
-export class PortfolioSections {
-  /** Nav + render order. Sections with no content are hidden. */
-  static sections(owner: Pick<PortfolioOwner, "skills" | "projects">): PortfolioSection[] {
-    return [
-      { key: "hero", id: "top", navLabel: null, visible: true },
-      { key: "about", id: "about", navLabel: "About", visible: true },
-      {
-        key: "skills",
-        id: "skills",
-        navLabel: "Skills",
-        visible: owner.skills.length > 0,
-      },
-      {
-        key: "projects",
-        id: "projects",
-        navLabel: "Projects",
-        visible: owner.projects.length > 0,
-      },
-      { key: "contact", id: "contact", navLabel: "Contact", visible: true },
-    ];
-  }
-}
-
-/**
- * Projects have no storage yet (the `projects` table needs
- * `supabase/migrations/*.sql` to be applied), so this is the placeholder source.
- */
-export class PortfolioProjects {
-  static projects(): PortfolioProject[] {
-    return [];
-  }
-}

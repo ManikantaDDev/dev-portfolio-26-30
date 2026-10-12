@@ -2,9 +2,12 @@
 
 import type { FormConfig } from "@/forms/config/form";
 import type { FormKey } from "@/forms/stores";
+import { EducationFormConfig } from "@/forms/config/education";
+import { ExperienceFormConfig } from "@/forms/config/experience";
 import { ForgotPasswordFormConfig } from "@/forms/config/forgot-password";
 import { LoginFormConfig } from "@/forms/config/login";
 import { ProfileFormConfig } from "@/forms/config/profile";
+import { ProjectFormConfig } from "@/forms/config/project";
 import { RegisterFormConfig } from "@/forms/config/register";
 import { ResetPasswordFormConfig } from "@/forms/config/reset-password";
 import { SkillFormConfig } from "@/forms/config/skill";
@@ -27,4 +30,7 @@ export const formConfigs: Record<FormKey, FormConfigFactory> = {
   "reset-password": ResetPasswordFormConfig.formConfig,
   profile: ProfileFormConfig.formConfig,
   skill: SkillFormConfig.formConfig,
+  project: ProjectFormConfig.formConfig,
+  experience: ExperienceFormConfig.formConfig,
+  education: EducationFormConfig.formConfig,
 };

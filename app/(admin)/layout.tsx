@@ -1,21 +1,27 @@
 import { redirect } from "next/navigation";
-import { getCurrentProfile } from "@/lib/supabase/profile";
-import { TopBar } from "@/components/admin/top-bar";
+import { getCurrentUser, getOwnerId, getProfileById } from "@/lib/portfolio/queries";
+import { AdminSidebar } from "@/components/admin/admin-sidebar";
 
 export default async function AdminLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const current = await getCurrentProfile();
+  const user = await getCurrentUser();
 
-  if (!current) {
+  if (!user) {
     redirect("/login");
   }
 
-  return (
-    <div className="min-h-screen bg-background">
-      <TopBar email={current.user.email ?? ""} role={current.role} />
+  const [profile, ownerId] = await Promise.all([getProfileById(user.id), getOwnerId()]);
 
-      <main className="mx-auto max-w-6xl px-6 py-10">{children}</main>
+  return (
+    <div className="min-h-screen bg-background lg:pl-64">
+      <AdminSidebar
+        email={user.email ?? ""}
+        role={profile?.role ?? null}
+        isOwner={ownerId === user.id}
+      />
+
+      <main className="mx-auto max-w-5xl px-6 py-10">{children}</main>
     </div>
   );
 }

@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 const PUBLIC_PATHS = ["/", "/login", "/register"];
-const GUARDED_PREFIXES = ["/dashboard"];
+const GUARDED_PREFIXES = ["/dashboard", "/admin", "/profile"];
 
 export async function proxy(request: NextRequest) {
   const supabaseResponse = NextResponse.next({
@@ -34,22 +34,14 @@ export async function proxy(request: NextRequest) {
 
   const { pathname, search } = request.nextUrl;
 
-  const isPublic = PUBLIC_PATHS.some((path) => pathname.startsWith(path));
+  const isPublic = PUBLIC_PATHS.some((path) => pathname === path);
   const isGuarded = GUARDED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 
-  if (!user && isGuarded) {
+  if (!user && (isGuarded || !isPublic)) {
     const url = request.nextUrl.clone();
 
     url.pathname = "/login";
     url.search = `?next=${encodeURIComponent(`${pathname}${search}`)}`;
-
-    return NextResponse.redirect(url);
-  }
-
-  if (!user && !isPublic) {
-    const url = request.nextUrl.clone();
-
-    url.pathname = "/login";
 
     return NextResponse.redirect(url);
   }

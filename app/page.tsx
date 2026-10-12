@@ -1,121 +1,121 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { Lock } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import StarField from "@/features/portfolio/star-field";
 import {
   AboutSection,
   ContactSection,
+  EducationSection,
+  ExperienceSection,
   HeroSection,
+  PortfolioFooter,
+  PortfolioNav,
   ProjectsSection,
-  SiteFooter,
   SkillsSection,
 } from "@/features/portfolio/sections";
-import {
-  PortfolioSections,
-  type PortfolioOwner,
-  type PortfolioSectionKey,
-} from "@/portfolio/config/sections";
-import { getPortfolioOwner } from "@/lib/portfolio/owner";
+import type { PortfolioOwner, PortfolioSection } from "@/portfolio/config/sections";
+import { getPortfolio, isRenderableSection } from "@/lib/portfolio/owner";
+import { getCurrentUser } from "@/lib/portfolio/queries";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "cn";
 
-export const metadata: Metadata = {
-  title: "Portfolio",
-  description: "A dynamic, fully customizable portfolio platform.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const owner = await getPortfolio();
 
-/** Projects takes a different prop shape, so it is rendered separately. */
+  if (!owner) {
+    return { title: "Portfolio" };
+  }
+
+  const title = owner.settings.site_title || owner.name || "Portfolio";
+
+  return {
+    title,
+    description: owner.settings.site_description || owner.headline || undefined,
+  };
+}
+
 function SectionRenderer({
   section,
   owner,
 }: {
-  section: Exclude<PortfolioSectionKey, "projects">;
+  section: PortfolioSection;
   owner: PortfolioOwner;
 }) {
-  switch (section) {
+  switch (section.key) {
     case "hero":
       return <HeroSection owner={owner} />;
     case "about":
-      return <AboutSection owner={owner} />;
+      return <AboutSection owner={owner} section={section} />;
     case "skills":
-      return <SkillsSection owner={owner} />;
+      return <SkillsSection owner={owner} section={section} />;
+    case "experience":
+      return <ExperienceSection owner={owner} section={section} />;
+    case "projects":
+      return <ProjectsSection projects={owner.projects} section={section} />;
+    case "education":
+      return <EducationSection owner={owner} section={section} />;
     case "contact":
-      return <ContactSection owner={owner} />;
+      return <ContactSection owner={owner} section={section} />;
+    default:
+      return null;
   }
 }
 
 export default async function HomePage() {
-  const { owner, isPersonalised } = await getPortfolioOwner();
-  const sections = PortfolioSections.sections(owner).filter(
-    (section) => section.visible,
-  );
-  const navSections = sections.filter((section) => section.navLabel);
+  const [owner, user] = await Promise.all([getPortfolio(), getCurrentUser()]);
+
+  if (!owner) {
+    return <EmptyPortfolio isSignedIn={Boolean(user)} />;
+  }
+
+  const sections = owner.sections.filter((section) => isRenderableSection(section, owner));
 
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-[#04081C] text-blue-50">
       <StarField />
 
-      <header className="sticky top-0 z-20 border-b border-white/5 bg-[#04081C]/70 backdrop-blur-md">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-6 py-4">
-          <Link
-            href="/"
-            className="text-sm font-semibold tracking-tight text-white"
-          >
-            {owner.name}
-          </Link>
-
-          <nav className="flex items-center gap-1">
-            {navSections.map((section) => (
-              <a
-                key={section.key}
-                href={`#${section.id}`}
-                className="rounded-md px-2.5 py-1.5 text-xs font-medium text-blue-100/70 transition-colors hover:bg-white/5 hover:text-white"
-              >
-                {section.navLabel}
-              </a>
-            ))}
-          </nav>
-
-          <Link
-            href={isPersonalised ? "/admin" : "/login"}
-            className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-          >
-            <Lock />
-            {isPersonalised ? "Admin" : "Sign in"}
-          </Link>
-        </div>
-      </header>
-
-      {!isPersonalised ? (
-        <div className="mx-auto max-w-5xl px-6 pt-8">
-          <p className="rounded-lg border border-blue-300/15 bg-blue-500/10 px-4 py-3 text-center text-xs text-blue-100/70">
-            You&apos;re seeing placeholder content.{" "}
-            <Link
-              href="/login"
-              className="font-medium text-blue-200 underline underline-offset-4"
-            >
-              Sign in
-            </Link>{" "}
-            to show your own profile here.
-          </p>
-        </div>
-      ) : null}
+      <PortfolioNav
+        sections={sections}
+        siteTitle={owner.settings.site_title || owner.name}
+        adminHref={user ? "/dashboard" : "/login"}
+        adminLabel={user ? "Admin" : "Sign in"}
+      />
 
       <main>
-        {sections.map((section) =>
-          section.key === "projects" ? (
-            <ProjectsSection key={section.key} projects={owner.projects} />
-          ) : (
-            <SectionRenderer
-              key={section.key}
-              section={section.key}
-              owner={owner}
-            />
-          ),
-        )}
+        {sections.map((section) => (
+          <SectionRenderer key={section.id} section={section} owner={owner} />
+        ))}
       </main>
 
-      <SiteFooter />
+      <PortfolioFooter text={owner.settings.footer_text} />
+    </div>
+  );
+}
+
+/** Shown only while nobody has published a portfolio yet. */
+function EmptyPortfolio({ isSignedIn }: { isSignedIn: boolean }) {
+  return (
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#04081C] px-6 text-blue-50">
+      <StarField />
+
+      <div className="relative z-10 max-w-md space-y-4 text-center">
+        <h1 className="bg-gradient-to-br from-white via-blue-100 to-blue-400 bg-clip-text text-3xl font-bold tracking-tight text-transparent sm:text-4xl">
+          Nothing published yet
+        </h1>
+
+        <p className="text-sm leading-relaxed text-blue-100/60">
+          No portfolio has been set up, so there is nothing to show. Every section on this page is
+          rendered from the database.
+        </p>
+
+        <Link
+          href={isSignedIn ? "/dashboard" : "/login"}
+          className={cn(buttonVariants({ size: "lg" }), "mt-4")}
+        >
+          {isSignedIn ? "Open your dashboard" : "Sign in to publish"}
+          <ExternalLink data-icon="inline-end" />
+        </Link>
+      </div>
     </div>
   );
 }
