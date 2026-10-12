@@ -1,10 +1,11 @@
 import { z } from "zod";
 import { create } from "zustand";
 
-type FormState<T> = {
+export type FormState<T> = {
   data: T;
   errors: Partial<Record<keyof T, string>>;
   setFields: <K extends keyof T>(field: K, value: T[K]) => void;
+  setForm: (values: Partial<T>) => void;
   setErrors: (errors: Partial<Record<keyof T, string>>) => void;
   validateForm: (schema: z.ZodType<T>) => boolean;
   resetForm: () => void;
@@ -27,6 +28,18 @@ export function createFormStore<T extends Record<string, unknown>>(
           ...state.errors,
           [field]: undefined,
         },
+      })),
+
+    setForm: (values) =>
+      set((state) => ({
+        data: {
+          ...state.data,
+          ...values,
+        },
+        errors: Object.keys(values).reduce<Partial<Record<keyof T, string>>>(
+          (acc, key) => ({ ...acc, [key]: undefined }),
+          state.errors
+        ),
       })),
 
     setErrors: (errors) => set({ errors }),

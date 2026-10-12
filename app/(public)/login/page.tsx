@@ -1,120 +1,138 @@
 "use client";
 
-import { SubmitEvent, useState } from "react";
-import Link from "next/link";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense } from "react";
+import { Loader2 } from "lucide-react";
+import GenericForm, { type SubmitResult } from "@/forms/generic-form";
+import { LoginFormConfig } from "@/forms/config/login";
+import { ForgotPasswordFormConfig } from "@/forms/config/forgot-password";
+import {
+  type ForgotPasswordFormValues,
+  type LoginFormValues,
+} from "@/forms/config/validations";
 import { createClient } from "@/lib/supabase/client";
 
-export default function LoginPage() {
+type Mode = "login" | "forgot-password";
+
+function LoginContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextUrl = searchParams.get("next") || "/dashboard";
+  const urlError = searchParams.get("error");
+  const [mode, setMode] = useState<Mode>("login");
+
+  async function handleLogin(values: LoginFormValues): Promise<SubmitResult> {
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: values.email,
+        password: values.password,
+      });
+
+      if (error) {
+        const message = error.message.toLowerCase();
+
+        if (message.includes("email not confirmed")) {
+          return {
+            error:
+              "Your email has not been verified yet. Please check your inbox for the confirmation link.",
+          };
+        }
+
+        if (message.includes("invalid login credentials")) {
+          return {
+            error: "Invalid email or password. Please verify your credentials.",
+          };
+        }
+
+        return { error: error.message };
+      }
+
+      if (data.session) {
+        router.refresh();
+        router.push(nextUrl);
+      }
+
+      return {};
+    } catch (err: unknown) {
+      return {
+        error:
+          err instanceof Error
+            ? err.message
+            : "An unexpected error occurred during login.",
+      };
+    }
+  }
+
+  async function handleForgotPassword(
+    values: ForgotPasswordFormValues,
+  ): Promise<SubmitResult> {
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.resetPasswordForEmail(
+        values.email,
+        {
+          redirectTo: `${window.location.origin}/api/auth/callback?next=/dashboard/reset-password`,
+        },
+      );
+
+      if (error) {
+        return { error: error.message };
+      }
+
+      setMode("login");
+      return {
+        message: "Password reset email sent! Check your inbox for the link.",
+      };
+    } catch (err: unknown) {
+      return {
+        error:
+          err instanceof Error
+            ? err.message
+            : "Failed to send password reset email.",
+      };
+    }
+  }
+
+  const initialError =
+    urlError === "auth_callback_failed"
+      ? "Authentication confirmation failed or expired. Please try signing in again."
+      : null;
+
   return (
-    <Suspense fallback={null}>
-      <LoginForm />
-    </Suspense>
+    <GenericForm
+      key={mode}
+      formKey={mode}
+      initialError={initialError}
+      config={
+        mode === "login"
+          ? LoginFormConfig.formConfig({
+              onForgotPassword: () => setMode("forgot-password"),
+            })
+          : ForgotPasswordFormConfig.formConfig()
+      }
+      onSubmit={
+        mode === "login"
+          ? (values) => handleLogin(values as LoginFormValues)
+          : (values) => handleForgotPassword(values as ForgotPasswordFormValues)
+      }
+      onCancel={mode === "forgot-password" ? () => setMode("login") : undefined}
+    />
   );
 }
 
-function LoginForm() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const next = searchParams.get("next") ?? "/dashboard";
-
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  async function handleLogin(event: SubmitEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    setLoading(true);
-    setError("");
-
-    const supabase = createClient();
-
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      setError(error.message);
-    } else {
-      router.push(next);
-      router.refresh();
-    }
-
-    setLoading(false);
-  }
-
+export default function LoginPage() {
   return (
-    <main className="flex min-h-screen items-center justify-center p-6">
-      <div className="w-full max-w-md space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Login</h1>
-          <p className="mt-2 text-muted-foreground">
-            Sign in to your portfolio admin account.
-          </p>
-        </div>
-
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label htmlFor="email" className="mb-2 block text-sm font-medium">
-              Email
-            </label>
-
-            <input
-              id="email"
-              type="email"
-              required
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              className="w-full rounded-md border px-3 py-2"
-              placeholder="you@example.com"
-            />
+    <main className="min-h-screen flex items-center justify-center p-4 bg-muted/20">
+      <Suspense
+        fallback={
+          <div className="flex items-center justify-center p-8">
+            <Loader2 className="size-6 animate-spin text-muted-foreground" />
           </div>
-
-          <div>
-            <label
-              htmlFor="password"
-              className="mb-2 block text-sm font-medium"
-            >
-              Password
-            </label>
-
-            <input
-              id="password"
-              type="password"
-              required
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              className="w-full rounded-md border px-3 py-2"
-              placeholder="Enter your password"
-            />
-          </div>
-
-          {error && (
-            <p className="rounded-md bg-red-50 p-3 text-sm text-red-600">
-              {error}
-            </p>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-md bg-black px-4 py-2 text-white disabled:opacity-50"
-          >
-            {loading ? "Signing in..." : "Sign in"}
-          </button>
-        </form>
-
-        <p className="text-center text-sm">
-          Don&apos;t have an account?{" "}
-          <Link href="/register" className="font-medium underline">
-            Register
-          </Link>
-        </p>
-      </div>
+        }
+      >
+        <LoginContent />
+      </Suspense>
     </main>
   );
 }

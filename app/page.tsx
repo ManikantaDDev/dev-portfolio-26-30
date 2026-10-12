@@ -1,219 +1,121 @@
 import Link from "next/link";
+import type { Metadata } from "next";
+import { Lock } from "lucide-react";
+import StarField from "@/features/portfolio/star-field";
 import {
-  experiences,
-  profile,
-  projects,
-  publishedProjects,
-  sections,
-  skills,
-} from "@/lib/demo/portfolio-data";
-import { PublicFooter } from "@/components/public/public-footer";
-import { PublicHeader } from "@/components/public/public-header";
+  AboutSection,
+  ContactSection,
+  HeroSection,
+  ProjectsSection,
+  SiteFooter,
+  SkillsSection,
+} from "@/features/portfolio/sections";
+import {
+  PortfolioSections,
+  type PortfolioOwner,
+  type PortfolioSectionKey,
+} from "@/portfolio/config/sections";
+import { getPortfolioOwner } from "@/lib/portfolio/owner";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "cn";
 
-export default function Home() {
-  const visible = [...sections].sort((a, b) => a.displayOrder - b.displayOrder);
-  const visibleNames = new Set(visible.filter((s) => s.isVisible).map((s) => s.name));
+export const metadata: Metadata = {
+  title: "Portfolio",
+  description: "A dynamic, fully customizable portfolio platform.",
+};
+
+/** Projects takes a different prop shape, so it is rendered separately. */
+function SectionRenderer({
+  section,
+  owner,
+}: {
+  section: Exclude<PortfolioSectionKey, "projects">;
+  owner: PortfolioOwner;
+}) {
+  switch (section) {
+    case "hero":
+      return <HeroSection owner={owner} />;
+    case "about":
+      return <AboutSection owner={owner} />;
+    case "skills":
+      return <SkillsSection owner={owner} />;
+    case "contact":
+      return <ContactSection owner={owner} />;
+  }
+}
+
+export default async function HomePage() {
+  const { owner, isPersonalised } = await getPortfolioOwner();
+  const sections = PortfolioSections.sections(owner).filter(
+    (section) => section.visible,
+  );
+  const navSections = sections.filter((section) => section.navLabel);
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <PublicHeader />
+    <div className="relative min-h-screen overflow-x-hidden bg-[#04081C] text-blue-50">
+      <StarField />
 
-      <main className="flex-1">
-        <section className="mx-auto max-w-5xl px-6 py-20">
-          <p className="text-sm font-medium text-muted-foreground">{profile.role}</p>
+      <header className="sticky top-0 z-20 border-b border-white/5 bg-[#04081C]/70 backdrop-blur-md">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-6 py-4">
+          <Link
+            href="/"
+            className="text-sm font-semibold tracking-tight text-white"
+          >
+            {owner.name}
+          </Link>
 
-          <h1 className="mt-3 max-w-2xl text-4xl font-bold tracking-tight sm:text-5xl">
-            {profile.headline}
-          </h1>
-
-          <p className="mt-6 max-w-2xl text-lg text-muted-foreground">{profile.bio}</p>
-
-          <div className="mt-8 flex flex-wrap gap-3">
-            {publishedProjects.slice(0, 2).map((project) => (
-              <Link
-                key={project.id}
-                href="#projects"
-                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+          <nav className="flex items-center gap-1">
+            {navSections.map((section) => (
+              <a
+                key={section.key}
+                href={`#${section.id}`}
+                className="rounded-md px-2.5 py-1.5 text-xs font-medium text-blue-100/70 transition-colors hover:bg-white/5 hover:text-white"
               >
-                {project.title}
-              </Link>
+                {section.navLabel}
+              </a>
             ))}
+          </nav>
 
+          <Link
+            href={isPersonalised ? "/admin" : "/login"}
+            className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+          >
+            <Lock />
+            {isPersonalised ? "Admin" : "Sign in"}
+          </Link>
+        </div>
+      </header>
+
+      {!isPersonalised ? (
+        <div className="mx-auto max-w-5xl px-6 pt-8">
+          <p className="rounded-lg border border-blue-300/15 bg-blue-500/10 px-4 py-3 text-center text-xs text-blue-100/70">
+            You&apos;re seeing placeholder content.{" "}
             <Link
-              href="#contact"
-              className="rounded-md border border-border px-4 py-2 text-sm font-medium transition-colors hover:bg-muted"
+              href="/login"
+              className="font-medium text-blue-200 underline underline-offset-4"
             >
-              Get in touch
-            </Link>
-          </div>
-        </section>
+              Sign in
+            </Link>{" "}
+            to show your own profile here.
+          </p>
+        </div>
+      ) : null}
 
-        {visibleNames.has("about") ? (
-          <section id="about" className="border-t border-border">
-            <div className="mx-auto max-w-5xl px-6 py-16">
-              <h2 className="text-2xl font-semibold">About</h2>
-
-              <dl className="mt-6 grid gap-6 sm:grid-cols-3">
-                <div>
-                  <dt className="text-sm text-muted-foreground">Name</dt>
-                  <dd className="mt-1 font-medium">{profile.name}</dd>
-                </div>
-
-                <div>
-                  <dt className="text-sm text-muted-foreground">Role</dt>
-                  <dd className="mt-1 font-medium">{profile.role}</dd>
-                </div>
-
-                <div>
-                  <dt className="text-sm text-muted-foreground">Location</dt>
-                  <dd className="mt-1 font-medium">{profile.location}</dd>
-                </div>
-              </dl>
-            </div>
-          </section>
-        ) : null}
-
-        {visibleNames.has("skills") ? (
-          <section id="skills" className="border-t border-border bg-muted/30">
-            <div className="mx-auto max-w-5xl px-6 py-16">
-              <h2 className="text-2xl font-semibold">Skills</h2>
-
-              <ul className="mt-6 grid gap-5 sm:grid-cols-2">
-                {skills.map((skill) => (
-                  <li key={skill.name}>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="font-medium">{skill.name}</span>
-                      <span className="text-muted-foreground">{skill.level}%</span>
-                    </div>
-
-                    <div
-                      role="meter"
-                      aria-valuenow={skill.level}
-                      aria-valuemin={0}
-                      aria-valuemax={100}
-                      aria-label={skill.name}
-                      className="mt-2 h-2 overflow-hidden rounded-full bg-border"
-                    >
-                      <div
-                        className="h-full rounded-full bg-primary"
-                        style={{ width: `${skill.level}%` }}
-                      />
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </section>
-        ) : null}
-
-        {visibleNames.has("experience") ? (
-          <section id="experience" className="border-t border-border">
-            <div className="mx-auto max-w-5xl px-6 py-16">
-              <h2 className="text-2xl font-semibold">Experience</h2>
-
-              <ol className="mt-6 space-y-8">
-                {experiences.map((experience) => (
-                  <li key={`${experience.company}-${experience.title}`}>
-                    <div className="flex flex-wrap items-baseline justify-between gap-2">
-                      <h3 className="text-lg font-medium">{experience.title}</h3>
-                      <p className="text-sm text-muted-foreground">{experience.period}</p>
-                    </div>
-
-                    <p className="mt-1 text-sm font-medium text-muted-foreground">
-                      {experience.company}
-                    </p>
-
-                    <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-                      {experience.summary}
-                    </p>
-                  </li>
-                ))}
-              </ol>
-            </div>
-          </section>
-        ) : null}
-
-        {visibleNames.has("projects") ? (
-          <section id="projects" className="border-t border-border bg-muted/30">
-            <div className="mx-auto max-w-5xl px-6 py-16">
-              <h2 className="text-2xl font-semibold">Projects</h2>
-
-              <div className="mt-6 grid gap-6 sm:grid-cols-2">
-                {publishedProjects.map((project) => (
-                  <article
-                    key={project.id}
-                    className="rounded-lg border border-border bg-background p-5"
-                  >
-                    <h3 className="text-lg font-medium">{project.title}</h3>
-
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      {project.description}
-                    </p>
-
-                    <ul className="mt-4 flex flex-wrap gap-2">
-                      {project.tags.map((tag) => (
-                        <li
-                          key={tag}
-                          className="rounded-full bg-muted px-2.5 py-0.5 text-xs"
-                        >
-                          {tag}
-                        </li>
-                      ))}
-                    </ul>
-
-                    <div className="mt-5 flex items-center gap-4 text-sm">
-                      {project.liveUrl ? (
-                        <a
-                          href={project.liveUrl}
-                          className="font-medium underline underline-offset-4"
-                        >
-                          Live site
-                        </a>
-                      ) : null}
-
-                      {project.githubUrl ? (
-                        <a
-                          href={project.githubUrl}
-                          className="text-muted-foreground underline underline-offset-4"
-                        >
-                          Source
-                        </a>
-                      ) : null}
-                    </div>
-                  </article>
-                ))}
-              </div>
-
-              <p className="mt-8 text-sm text-muted-foreground">
-                {publishedProjects.length} of {projects.length} projects published.
-              </p>
-            </div>
-          </section>
-        ) : null}
-
-        {visibleNames.has("contact") ? (
-          <section id="contact" className="border-t border-border">
-            <div className="mx-auto max-w-5xl px-6 py-16">
-              <h2 className="text-2xl font-semibold">Contact</h2>
-
-              <ul className="mt-6 flex flex-wrap gap-6">
-                {profile.socials.map((social) => (
-                  <li key={social.label}>
-                    <a
-                      href={social.href}
-                      className="text-sm underline underline-offset-4"
-                    >
-                      {social.label}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </section>
-        ) : null}
+      <main>
+        {sections.map((section) =>
+          section.key === "projects" ? (
+            <ProjectsSection key={section.key} projects={owner.projects} />
+          ) : (
+            <SectionRenderer
+              key={section.key}
+              section={section.key}
+              owner={owner}
+            />
+          ),
+        )}
       </main>
 
-      <PublicFooter name={profile.name} note="Built with Next.js and Supabase." />
+      <SiteFooter />
     </div>
   );
 }

@@ -11,6 +11,14 @@ export type Database = {
           id: string;
           email: string;
           role: 'admin' | 'viewer';
+          display_name: string | null;
+          headline: string | null;
+          bio: string | null;
+          avatar_url: string | null;
+          location: string | null;
+          github_url: string | null;
+          linkedin_url: string | null;
+          website_url: string | null;
           created_at: string;
           updated_at: string;
         };
