@@ -8,6 +8,7 @@ import {
   MapPin,
   Pencil,
   Shield,
+  Star,
 } from "lucide-react";
 import { getCurrentProfile } from "@/lib/supabase/profile";
 import { buttonVariants } from "@/components/ui/button";
@@ -34,7 +35,7 @@ export default async function ProfilePage() {
     redirect("/login");
   }
 
-  const { user, profile, role } = current;
+  const { user, profile, role, skills } = current;
   const displayName = profile?.display_name || user.email || "Profile";
   const initial = displayName.charAt(0).toUpperCase();
   const links = linkFields.filter((field) => profile?.[field.key]);
@@ -140,6 +141,25 @@ export default async function ProfilePage() {
                     <field.icon />
                     {field.label}
                   </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+      {skills.length > 0 ? (
+          <section className="rounded-xl border border-border bg-card p-6 shadow-xs">
+            <h3 className="text-base font-semibold">Skills</h3>
+            <ul className="mt-4 flex flex-wrap gap-2">
+              {skills.map((skill) => (
+                <li
+                  key={skill.id}
+                  className="flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-sm"
+                >
+                  {skill.is_featured ? (
+                    <Star className="size-3.5 fill-current text-primary" aria-label="Featured" />
+                  ) : null}
+                  <span className="font-medium">{skill.name}</span>
+                  <span className="text-xs text-muted-foreground">{skill.level}</span>
                 </li>
               ))}
             </ul>

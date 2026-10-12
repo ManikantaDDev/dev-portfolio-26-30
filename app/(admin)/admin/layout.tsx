@@ -7,6 +7,7 @@ import { cn } from "cn";
 
 const navItems = [
   { href: "/admin", label: "Profile Settings" },
+  { href: "/admin/skills", label: "Skills" },
   { href: "/dashboard", label: "Dashboard" },
   { href: "/profile", label: "My Profile" },
 ];

@@ -108,3 +108,60 @@ export const profileSchema = z.object({
     z.url("Enter a valid website URL").max(PROFILE_LIMITS.websiteUrl),
   ]),
 });
+
+// ============================================================
+// Skills
+// ============================================================
+
+export const SKILL_CATEGORIES = [
+  "Frontend",
+  "Backend",
+  "Database",
+  "DevOps",
+  "Design",
+  "Other",
+] as const;
+
+export const SKILL_LEVELS = ["Beginner", "Intermediate", "Advanced", "Expert"] as const;
+
+export type SkillCategory = (typeof SKILL_CATEGORIES)[number];
+export type SkillLevel = (typeof SKILL_LEVELS)[number];
+
+export type Skill = {
+  id: string;
+  name: string;
+  category: SkillCategory;
+  level: SkillLevel;
+  years: number | null;
+  is_featured: boolean;
+};
+
+export type SkillFormValues = Omit<Skill, "id"> & { id: string };
+
+export const SKILL_LIMITS = {
+  name: 60,
+  years: 60,
+} as const;
+
+export const skillSchema = z.object({
+  // Not rendered as an input; carries the row id through an update.
+  id: z.string(),
+  name: z
+    .string()
+    .trim()
+    .min(2, "Skill name must be at least 2 characters")
+    .max(SKILL_LIMITS.name, `Skill name must be at most ${SKILL_LIMITS.name} characters`),
+  category: z.enum(SKILL_CATEGORIES, { message: "Select a category" }),
+  level: z.enum(SKILL_LEVELS, { message: "Select a level" }),
+  years: z.number().min(0, "Years cannot be negative").max(SKILL_LIMITS.years).nullish(),
+  is_featured: z.boolean(),
+});
+
+export const emptySkillValues: SkillFormValues = {
+  id: "",
+  name: "",
+  category: "Frontend",
+  level: "Intermediate",
+  years: null,
+  is_featured: false,
+};

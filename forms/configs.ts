@@ -7,6 +7,7 @@ import { LoginFormConfig } from "@/forms/config/login";
 import { ProfileFormConfig } from "@/forms/config/profile";
 import { RegisterFormConfig } from "@/forms/config/register";
 import { ResetPasswordFormConfig } from "@/forms/config/reset-password";
+import { SkillFormConfig } from "@/forms/config/skill";
 
 /**
  * Config factories can take their own options, so the parameter type is the
@@ -25,4 +26,5 @@ export const formConfigs: Record<FormKey, FormConfigFactory> = {
   register: RegisterFormConfig.formConfig,
   "reset-password": ResetPasswordFormConfig.formConfig,
   profile: ProfileFormConfig.formConfig,
+  skill: SkillFormConfig.formConfig,
 };
