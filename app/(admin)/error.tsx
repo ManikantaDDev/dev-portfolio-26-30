@@ -15,7 +15,21 @@ const MIGRATIONS = [
   "00000000000000_init_schema.sql",
   "20260101000000_profile_fields.sql",
   "20260201000000_admin_portfolio.sql",
+  "20260202000000_claim_policy.sql",
 ];
+
+const CLAIM_FIX = `DROP POLICY IF EXISTS "Users can manage portfolio settings" ON public.portfolio_settings;
+DROP POLICY IF EXISTS "Users can claim the portfolio" ON public.portfolio_settings;
+
+CREATE POLICY "Users can manage portfolio settings"
+ON public.portfolio_settings FOR ALL TO authenticated
+USING (key <> 'owner_id') WITH CHECK (key <> 'owner_id');
+
+CREATE POLICY "Users can claim the portfolio"
+ON public.portfolio_settings FOR INSERT TO authenticated
+WITH CHECK (key = 'owner_id');
+
+NOTIFY pgrst, 'reload schema';`;
 
 export default function AdminError({
   error,
@@ -27,13 +41,24 @@ export default function AdminError({
   const message = error.message ?? "";
 
   const isRecursion = message.includes("infinite recursion");
+  const isClaimBlocked = /row-level security|violates row-level/i.test(message);
   const isMissingSchema = /PGRST20\d|Could not find the table/.test(message);
   const isMissingRelation = /relation .* does not exist/.test(message);
 
   let cause = "The database rejected the request. Check the details below.";
   let steps: string[] = [];
+  let snippet = RECURSION_FIX;
 
-  if (isRecursion) {
+  if (isClaimBlocked) {
+    cause =
+      "The policy that lets the first account claim the published portfolio has not been applied yet, so the owner_id row cannot be written.";
+    steps = [
+      "In Supabase, open SQL Editor and run:",
+      "supabase/migrations/20260202000000_claim_policy.sql",
+      "Reload this page.",
+    ];
+    snippet = CLAIM_FIX;
+  } else if (isRecursion) {
     cause =
       "A row level security policy on the profiles table reads the profiles table inside its own USING clause, which Postgres cannot evaluate. It blocks every signed-in request until the policy is dropped.";
     steps = [
@@ -79,7 +104,7 @@ export default function AdminError({
             </p>
           ))}
           <pre className="overflow-x-auto rounded-lg border border-border bg-muted/40 p-3 text-xs">
-            <code>{RECURSION_FIX}</code>
+            <code>{snippet}</code>
           </pre>
         </div>
       ) : null}

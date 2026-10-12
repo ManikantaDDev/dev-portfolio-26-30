@@ -1,5 +1,6 @@
 import Link from "next/link";
 import {
+  AlertTriangle,
   ArrowUpRight,
   Briefcase,
   Eye,
@@ -9,7 +10,7 @@ import {
   User,
 } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { getPortfolioStats, getSections, claimPortfolio, requireUser } from "@/lib/portfolio/queries";
+import { getPortfolioStats, getSections, getOwnerId, requireUser } from "@/lib/portfolio/queries";
 import { cn } from "@/lib/utils";
 
 const STAT_DEFS = [
@@ -21,12 +22,7 @@ const STAT_DEFS = [
 
 export default async function DashboardPage() {
   const user = await requireUser("/dashboard");
-
-  try {
-    await claimPortfolio(user.id, user.email ?? "");
-  } catch {
-    // The dashboard still renders its own data if seeding failed.
-  }
+  const ownerId = await getOwnerId();
 
   const [stats, sections] = await Promise.all([
     getPortfolioStats(user.id),
@@ -68,6 +64,16 @@ export default async function DashboardPage() {
           </Link>
         </p>
       </section>
+
+      {ownerId !== user.id ? (
+        <section className="flex items-start gap-2.5 rounded-xl border border-amber-500/25 bg-amber-500/10 p-4 text-sm">
+          <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
+          <p className="leading-snug">
+            A different account owns the published portfolio, so the changes you make here stay
+            private. Everything you add below is still saved to your own profile.
+          </p>
+        </section>
+      ) : null}
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {STAT_DEFS.map((stat) => (

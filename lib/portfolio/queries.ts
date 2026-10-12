@@ -299,11 +299,16 @@ export async function claimPortfolio(userId: string, email: string): Promise<voi
   const { data: existingOwner } = await supabase.rpc("portfolio_owner_id");
 
   if (!existingOwner) {
+    // A plain INSERT rather than an upsert: the owner row is write-once, and
+    // a losing race (unique violation) just means somebody else claimed it
+    // first, which is not an error.
     const { error } = await supabase
       .from("portfolio_settings")
-      .upsert({ key: OWNER_SETTING_KEY, value: userId }, { onConflict: "key" });
+      .insert({ key: OWNER_SETTING_KEY, value: userId });
 
-    if (error) throw new Error(`Failed to claim the portfolio: ${error.message}`);
+    if (error && error.code !== "23505") {
+      throw new Error(`Failed to claim the portfolio: ${error.message}`);
+    }
   }
 
   const { data: profile } = await supabase
@@ -313,9 +318,9 @@ export async function claimPortfolio(userId: string, email: string): Promise<voi
     .maybeSingle();
 
   if (!profile) {
-    const { error } = await supabase
-      .from("profiles")
-      .insert({ id: userId, email, role: "viewer" });
+    // `role` is deliberately excluded from the INSERT column grant so a user
+    // cannot promote themselves, so the default applies here.
+    const { error } = await supabase.from("profiles").insert({ id: userId, email });
 
     if (error) throw new Error(`Failed to create your profile: ${error.message}`);
   }
