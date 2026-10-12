@@ -40,8 +40,7 @@ export default async function ProfilePage() {
   const links = linkFields.filter((field) => profile?.[field.key]);
 
   return (
-    <div className="min-h-screen bg-background">
-      <main className="mx-auto max-w-3xl space-y-6 px-8 py-8">
+    <div className="mx-auto max-w-3xl space-y-6">
         <section className="rounded-xl border border-border bg-card p-6 shadow-xs">
           <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
             {profile?.avatar_url ? (
@@ -154,7 +153,6 @@ export default async function ProfilePage() {
             </ul>
           </section>
         ) : null}
-      </main>
-    </div>
+      </div>
   );
 }

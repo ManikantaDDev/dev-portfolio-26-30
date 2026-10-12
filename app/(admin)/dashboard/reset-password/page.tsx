@@ -11,12 +11,12 @@ export default async function ResetPasswordPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-4 bg-muted/20">
+    <div className="rounded-xl border border-border bg-card p-6 shadow-xs">
       <GenericForm
         formKey="reset-password"
         configOptions={{ email: current.user.email ?? undefined }}
         action={updatePasswordAction}
       />
-    </main>
+    </div>
   );
 }

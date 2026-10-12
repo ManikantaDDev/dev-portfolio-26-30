@@ -4,14 +4,12 @@ import { requireUser } from "@/lib/auth/get-session";
 import { projects } from "@/lib/demo/portfolio-data";
 
 export default async function ProjectsPage() {
-  const session = await requireUser("/dashboard/projects");
+  await requireUser("/dashboard/projects");
 
   return (
     <AdminShell
       title="Projects"
       description="Create and edit portfolio projects."
-      email={session.email}
-      isAdmin={session.isAdmin}
     >
       <ProjectEditor projects={projects} />
     </AdminShell>
